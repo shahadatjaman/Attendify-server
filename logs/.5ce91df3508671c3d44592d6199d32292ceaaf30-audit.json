@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "logs\\.5ce91df3508671c3d44592d6199d32292ceaaf30-audit.json",
+    "files": [
+        {
+            "date": 1748433228210,
+            "name": "logs\\zkteco-2025-05-28.log",
+            "hash": "8ce20fc85c7c4f4357632dda41c6c389914b047ebd44a9873f78fd88e8db35e1"
+        }
+    ],
+    "hashType": "sha256"
+}

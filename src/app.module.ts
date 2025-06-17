@@ -17,7 +17,6 @@ import { ZktecoModule } from './zkteco/zkteco.module';
 import { BullModule } from '@nestjs/bull';
 import { LogsProcessor } from './logs/logs.processor';
 import { LoggerModule } from './logger/logger.module';
-
 @Module({
   imports: [
     BullModule.forRoot({
