@@ -1,19 +1,15 @@
+import { OnEvent } from '@nestjs/event-emitter';
+import { Injectable } from '@nestjs/common';
+import { LogsService } from './logs.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { NewLog } from './schemas/new-log.schema';
-import { Injectable } from '@nestjs/common';
+import { CustomLogger } from 'src/logger/custom-logger.service';
 import { Shift } from 'src/shifts/schemas/shift.schema';
 import { User } from 'src/users/schemas/user.schema';
-import { CustomLogger } from 'src/logger/custom-logger.service';
-import { OnEvent } from '@nestjs/event-emitter';
-
-const VERIFY_TYPE_MAP = {
-  1: 'FINGER',
-  4: 'CARD',
-};
+import { NewLog } from './schemas/new-log.schema';
 
 @Injectable()
-export class LogsService {
+export class LogCreatedListener {
   constructor(
     @InjectModel('NewLog') private readonly logModel: Model<NewLog>,
     @InjectModel('User') private readonly userModel: Model<User>,
@@ -21,14 +17,22 @@ export class LogsService {
     private readonly logger: CustomLogger,
   ) {}
 
-  async processAndStoreLog(logData: { userId: string; recordTime: string; verifyType: number }) {
-    const { userId, recordTime, verifyType } = logData;
+  // @OnEvent('log.created')
+  handleUserCreatedEvent(payload: any) {
+    console.log('Log created:', payload);
+    // Do something like send email, log, etc.
+  }
+
+  @OnEvent('log.created')
+  async processAndStoreLog(payload: any) {
+    const { deviceUserId, recordTime, verifyType, verify_state } = payload;
 
     const timestamp = new Date(recordTime);
     const logDate = timestamp.toISOString().split('T')[0];
     const timeStr = timestamp.toTimeString().slice(0, 5); // HH:mm
 
-    const user: any = await this.userModel.findOne({ userId });
+    const user: any = await this.userModel.findOne({ deviceUserId });
+    console.log('user', user);
     if (!user) return;
 
     const shifts = await this.shiftModel.find({ employees: { $in: [user._id.toString()] } });
@@ -53,12 +57,19 @@ export class LogsService {
     console.log('matchedShift', matchedShift);
     if (!matchedShift) {
       // log still valid, but no shift matched
-      this.logger.warn(`No matching shift found for ${userId} at ${timeStr}`, 'LogService');
+      this.logger.warn(`No matching shift found for ${deviceUserId} at ${timeStr}`, 'LogService');
       return;
     }
 
-    const isLate = timeStr > matchedShift.startAt;
-    const status = isLate ? 'LATE' : 'PRESENT';
+    let status;
+
+    switch (verify_state) {
+      case '0':
+        const isLate = timeStr > matchedShift.startAt;
+        status = isLate ? 'LATE' : 'PRESENT';
+        break;
+    }
+
     const verifyTypeLabel = this._mapVerifyType(verifyType);
 
     // 🔁 Find existing log for the day
@@ -79,7 +90,6 @@ export class LogsService {
 
     await log.save();
   }
-
   private _parseTime(timeStr: string): string {
     // "09:00" => "09:00"
     return timeStr;
@@ -96,8 +106,3 @@ export class LogsService {
     return h * 60 + m;
   }
 }
-
-// checkIn: 0
-// checkOut: 1
-// overTimeIn: 4
-// overTimeOut:5

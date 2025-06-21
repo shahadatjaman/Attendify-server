@@ -1,12 +1,31 @@
-import { Controller, Post, Body, Request, UseGuards, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Request,
+  UseGuards,
+  Req,
+  Res,
+  Get,
+  Query,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from './local-auth.guard';
+import { InjectModel } from '@nestjs/mongoose';
+import { User } from 'src/users/schemas/user.schema';
+import { Model } from 'mongoose';
+import { ResetPassDto } from './dto/resetPass.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    @InjectModel(User.name) private userModel: Model<User>,
+  ) {}
 
   @Post('login')
   @UseGuards(LocalAuthGuard)
@@ -45,5 +64,38 @@ export class AuthController {
       maxAge: 15 * 60 * 1000,
     });
     return { message: 'Access token refreshed' };
+  }
+
+  @Get('verify')
+  async verifyEmail(@Query('token') token: string, @Res() res: any) {
+    if (!token) {
+      throw new BadRequestException('Token is required');
+    }
+
+    try {
+      await this.authService.verifyEmailToken(token);
+      return res.status(200).send('✅ Email verified successfully!');
+    } catch (err) {
+      console.log('err', err);
+      return res.status(400).send('❌ Invalid or expired token.');
+    }
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: ResetPassDto) {
+    const user = await this.userModel.findOne({ email: body.email });
+    if (!user) throw new NotFoundException('User not found');
+
+    const token = await this.authService.generateResetToken(user.id);
+    await this.authService.sendResetEmail(user.email, token);
+
+    return { message: 'Password reset link sent to your email' };
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: { token: string; newPassword: string }) {
+    const { token, newPassword } = body;
+
+    return this.authService.resetPassword(token, newPassword);
   }
 }

@@ -10,6 +10,7 @@ import { MulterMiddleware } from 'src/middleware/SingleFileUpload';
 import { CloudinaryService } from 'src/shared/cloudinary.service';
 import { LocalStrategy } from './local.strategy';
 import { LoggerModule } from 'src/logger/logger.module';
+import { EmailService } from 'src/email/email.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { LoggerModule } from 'src/logger/logger.module';
     }),
     LoggerModule,
   ],
-  providers: [AuthService, JwtStrategy, CloudinaryService, LocalStrategy],
+  providers: [AuthService, JwtStrategy, CloudinaryService, LocalStrategy, EmailService],
   controllers: [AuthController],
 })
 export class AuthModule implements NestModule {

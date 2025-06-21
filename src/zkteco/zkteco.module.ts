@@ -7,11 +7,12 @@ import { LogsService } from 'src/logs/logs.service';
 import { NewLogSchema } from 'src/logs/schemas/new-log.schema';
 
 import { ShiftSchema } from 'src/shifts/schemas/shift.schema';
-import { LogsProcessor } from 'src/logs/logs.processor';
+
 import { BullModule } from '@nestjs/bull';
 import { UserSchema } from 'src/users/schemas/user.schema';
 import { CustomLogger } from 'src/logger/custom-logger.service';
 import { LoggerModule } from 'src/logger/logger.module';
+import { LogCreatedListener } from 'src/logs/LogCreatedListener';
 
 @Module({
   imports: [
@@ -23,6 +24,6 @@ import { LoggerModule } from 'src/logger/logger.module';
     MongooseModule.forFeature([{ name: 'Shift', schema: ShiftSchema }]),
     LoggerModule,
   ],
-  providers: [ZktecoService, ZktecoGateway, LogsService, LogsProcessor],
+  providers: [ZktecoService, ZktecoGateway, LogsService],
 })
 export class ZktecoModule {}

@@ -11,23 +11,27 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
 import { SharedModule } from './shared/shared.module';
 import { ConfigModule } from '@nestjs/config';
-import { ZktecoGateway } from './zkteco/zkteco.gateway';
-import { ZktecoService } from './zkteco/zkteco.service';
+
 import { ZktecoModule } from './zkteco/zkteco.module';
-import { BullModule } from '@nestjs/bull';
-import { LogsProcessor } from './logs/logs.processor';
-import { LoggerModule } from './logger/logger.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+
+import { EmailModule } from './email/email.module';
+import { LogCreatedListener } from './logs/LogCreatedListener';
+import { NewLogSchema } from './logs/schemas/new-log.schema';
+import { ShiftSchema } from './shifts/schemas/shift.schema';
+import { UserSchema } from './users/schemas/user.schema';
+import { CustomLogger } from './logger/custom-logger.service';
 @Module({
   imports: [
-    BullModule.forRoot({
-      redis: {
-        host: 'localhost',
-        port: 6379,
-      },
-    }),
+    MongooseModule.forFeature([{ name: 'NewLog', schema: NewLogSchema }]),
+    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: 'Shift', schema: ShiftSchema }]),
 
+    EventEmitterModule.forRoot({
+      global: true,
+    }),
     MongooseModule.forRoot(
-      'mongodb+srv://shahadatjaman16:shahadatjaman16@cluster0.vuvjeip.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+      'mongodb+srv://classifysoft:1Qd1juj4drdMJjnK@cluster0.owbnf.mongodb.net/attendify-server?retryWrites=true&w=majority&appName=Cluster0',
     ),
     DepartmentsModule,
     ShiftModule,
@@ -41,9 +45,10 @@ import { LoggerModule } from './logger/logger.module';
       isGlobal: true, // <-- makes ConfigService available app-wide
     }),
     ZktecoModule,
+    EmailModule,
     // LoggerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LogCreatedListener, CustomLogger],
 })
 export class AppModule {}

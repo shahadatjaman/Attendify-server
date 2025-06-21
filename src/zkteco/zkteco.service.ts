@@ -2,21 +2,21 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import ZKSDK from 'attendify';
+import ZKSDK from 'zkteco-terminal';
 
 import { Device } from '../devices/schemas/device.schema';
 import { ZktecoGateway } from './zkteco.gateway';
 import { LogsService } from 'src/logs/logs.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ZktecoService implements OnModuleInit {
   private zkInstance: ZKSDK;
   constructor(
     @InjectModel('Device') private readonly deviceModel: Model<Device>,
-    @InjectQueue('logs') private readonly logQueue: Queue,
-
+    private eventEmitter: EventEmitter2,
     private readonly zktecoGateway: ZktecoGateway,
     private readonly logsService: LogsService,
   ) {}
@@ -25,7 +25,7 @@ export class ZktecoService implements OnModuleInit {
     console.log('[ZK] Initializing connection to biometric device..');
 
     const device = await this.deviceModel.findOne();
-    console.log('device', device);
+
     if (!device) {
       console.error('[ZK] No device found in database.');
       return;
@@ -34,22 +34,32 @@ export class ZktecoService implements OnModuleInit {
     const { deviceIp, devicePort } = device;
 
     try {
-      this.zkInstance = new ZKSDK({ ip: deviceIp, devicePort });
+      this.zkInstance = new ZKSDK({ ip: '192.168.1.4', devicePort: 4370 });
 
-      await this.zkInstance.createSocket();
+      await this.zkInstance.createSocket(async (status) => {
+        try {
+          if (status) {
+            await this.zkInstance.enableDevice();
 
-      console.log(`[ZK] Connected to device at ${deviceIp}:${devicePort}`);
+            await this.zkInstance.getRealTimeLogs(async (data) => {
+              this.eventEmitter.emit('log.created', data);
+            });
+          }
+        } catch (error) {
+          console.log('error', error);
+        }
+      });
 
       await this.zkInstance.enableDevice();
 
       // ✅ Listen for real-time attendance logs
-      await this.zkInstance.getRealTimeLogs(async (data) => {
-        console.log('[ZK] Realtime Attendance:', data);
-        // await this.logQueue.add('storeLog', data);
-        await this.logsService.processAndStoreLog(data);
+      // await this.zkInstance.getRealTimeLogs(async (data) => {
+      //   console.log('[ZK] Realtime Attendance:', data);
+      //   await this.logQueue.add('storeLog', data);
+      //   // await this.logsService.processAndStoreLog(data);
 
-        // this.zktecoGateway.sendRealtimeLog(data); // ✅ emit to frontend
-      });
+      //   // this.zktecoGateway.sendRealtimeLog(data); // ✅ emit to frontend
+      // });
 
       // Optional: poll the device logs every 30s if real-time isn't firing
       // setInterval(async () => {
