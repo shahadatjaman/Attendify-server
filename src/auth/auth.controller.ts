@@ -47,8 +47,6 @@ export class AuthController {
         sameSite: 'none',
         secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        domain: 'attendify-server-10.onrender.com', // Usually optional, but can try
-        path: '/', // Default path
       });
       return { message: 'Login successful', accessToken: tokens.access_token };
     } catch (error) {
