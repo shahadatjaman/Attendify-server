@@ -42,13 +42,13 @@ export class AuthController {
     try {
       const tokens = await this.authService.login(req.user);
 
-      // res.cookie('refresh_token', tokens.refresh_token, {
-      //   httpOnly: true,
-      //   sameSite: 'none',
-      //   secure: true,
-      //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      // });
-      return { message: 'Login successful', accessToken: tokens.refresh_token };
+      res.cookie('refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      return { message: 'Login successful', accessToken: tokens.access_token };
     } catch (error) {
       console.log('error', error);
       throw new InternalServerErrorException('Error occured to login');
@@ -68,12 +68,6 @@ export class AuthController {
 
     const newAccessToken = await this.authService.refreshToken(refreshToken);
 
-    res.cookie('jwt', newAccessToken.access_token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
     return { message: 'Access token refreshed', accessToken: newAccessToken.access_token };
   }
 
