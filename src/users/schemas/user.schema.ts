@@ -24,8 +24,8 @@ export class User extends Document {
   @Prop()
   religion?: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Department', required: true })
-  dept: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Department', required: false })
+  dept?: Types.ObjectId;
 
   // Optional role, default is 'employee'
   @Prop({ default: 'employee' })
