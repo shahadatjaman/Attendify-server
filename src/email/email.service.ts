@@ -21,6 +21,7 @@ export class EmailService {
   async sendVerificationEmail(to: string, token: string) {
     const verificationLink = `${this.configService.get('SERVER_URL')}auth/verify?token=${token}`;
 
+    console.log('verificationLink', verificationLink);
     const generateVerificationEmail = (verificationUrl: string) => `
       <div style="font-family: Arial, sans-serif; color: #000; padding: 20px;">
         <p>Dear Customer :</p>
