@@ -1,4 +1,3 @@
-// src/email/email.service.ts
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
@@ -20,7 +19,7 @@ export class EmailService {
   }
 
   async sendVerificationEmail(to: string, token: string) {
-    const verificationLink = `https://localhost:3000/auth/verify?token=${token}`;
+    const verificationLink = `${process.env.SERVER_URL}auth/verify?token=${token}`;
 
     const generateVerificationEmail = (verificationUrl: string) => `
       <div style="font-family: Arial, sans-serif; color: #000; padding: 20px;">
@@ -66,7 +65,7 @@ export class EmailService {
       `;
 
   async sendResetEmail(email: string, token: string) {
-    const url = `http://localhost:3000/reset-password?token=${token}`;
+    const url = `${process.env.SERVER_URL}reset-password?token=${token}`;
     const html = this.generateResetPasswordEmail(url);
 
     await this.transporter.sendMail({
