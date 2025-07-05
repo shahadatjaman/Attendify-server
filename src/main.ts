@@ -9,7 +9,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.use(cookieParser());
   app.enableCors({
-    origin: 'https://zktimey.onrender.com', // frontend domain
+    origin: ['https://zktimey.vercel.app', 'http://localhost:3000'], // frontend domain
     credentials: true,
   });
   app.useGlobalFilters(new AllExceptionsFilter());

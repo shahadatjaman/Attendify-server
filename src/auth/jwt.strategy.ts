@@ -10,9 +10,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
-          let token = null;
-          if (req && req.cookies) {
-            token = req.cookies['refresh_token'];
+          let token = '';
+          const authHeader = req.headers['authorization'] || '';
+
+          if (req && authHeader) {
+            token = authHeader.replace('Bearer ', '');
           }
           return token;
         },
@@ -25,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const user = await this.authService.getUserByEmail(payload.email);
 
+    console.log('user', user);
     if (!user) {
       return null;
     }
