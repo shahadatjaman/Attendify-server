@@ -14,9 +14,7 @@ export class MulterMiddleware implements NestMiddleware {
       destination: (_req, _file, cb) => cb(null, UPLOADS_FOLDER),
       filename: (_req, file, cb) => {
         const ext = path.extname(file.originalname);
-        const baseName = path.basename(file.originalname, ext)
-          .toLowerCase()
-          .replace(/\s+/g, '-');
+        const baseName = path.basename(file.originalname, ext).toLowerCase().replace(/\s+/g, '-');
         const timestamp = Date.now();
         cb(null, `${baseName}-${timestamp}${ext}`);
       },
@@ -41,7 +39,6 @@ export class MulterMiddleware implements NestMiddleware {
     });
 
     upload.single('file')(req, res, (err: any) => {
-     
       if (err) {
         return res.status(500).json({
           message: err.message || err.toString(),
@@ -50,12 +47,9 @@ export class MulterMiddleware implements NestMiddleware {
         });
       }
 
-     
-
-   
-      if(req.file){
-      // Attach file to body for downstream middleware/controllers
-      req.body.file = req.file;
+      if (req.file) {
+        // Attach file to body for downstream middleware/controllers
+        req.body.file = req.file;
       }
 
       next();

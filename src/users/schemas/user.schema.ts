@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 @Schema()
 export class User extends Document {
@@ -24,9 +24,12 @@ export class User extends Document {
   @Prop()
   religion?: string;
 
+  @Prop({ type: Types.ObjectId, ref: 'Department', required: true })
+  dept: Types.ObjectId;
+
   // Optional role, default is 'employee'
   @Prop({ default: 'employee' })
-  role?: string;
+  roles?: string[];
 
   // Optional phone number
   @Prop()

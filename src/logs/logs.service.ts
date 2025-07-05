@@ -1,7 +1,7 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { NewLog } from './schemas/new-log.schema';
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Shift } from 'src/shifts/schemas/shift.schema';
 import { User } from 'src/users/schemas/user.schema';
 import { CustomLogger } from 'src/logger/custom-logger.service';
@@ -78,6 +78,71 @@ export class LogsService {
     }
 
     await log.save();
+  }
+
+  // This method retrieves logs for the current day
+  async getTodayLogs(): Promise<NewLog[]> {
+    const todayDateString = new Date().toISOString().split('T')[0];
+    return this.logModel
+      .find({ logDate: todayDateString, isDeleted: false })
+      .populate({ path: 'employee', select: '-password -isVerified -isDeleted' })
+      .populate({ path: 'shiftId', select: '' });
+  }
+
+  async getLogs(): Promise<NewLog[]> {
+    return this.logModel
+      .find({ isDeleted: false })
+      .populate({ path: 'employee', select: '-password -isVerified -isDeleted' })
+      .populate({ path: 'shiftId', select: '' })
+      .sort();
+  }
+
+  async deleteOne(logId: string) {
+    try {
+      const updated = await this.logModel.updateOne(
+        { _id: new Types.ObjectId(logId) },
+        { isDeleted: true },
+        { new: true },
+      );
+      return updated;
+    } catch (error) {
+      throw new InternalServerErrorException('Error occurred to delete log');
+    }
+  }
+
+  async getTodaySummary(): Promise<{
+    totalPresent: number;
+    totalAbsent: number;
+    totalLate: number;
+    totalLeave: number;
+  }> {
+    const todayDateString = new Date().toISOString().split('T')[0];
+
+    const [presentCount, absentCount, lateCount, leaveCount] = await Promise.all([
+      this.logModel.countDocuments({
+        logDate: todayDateString,
+        status: 'PRESENT',
+      }),
+      this.logModel.countDocuments({
+        logDate: todayDateString,
+        status: 'ABSENT',
+      }),
+      this.logModel.countDocuments({
+        logDate: todayDateString,
+        status: 'LATE',
+      }),
+      this.logModel.countDocuments({
+        logDate: todayDateString,
+        status: 'LEAVE',
+      }),
+    ]);
+
+    return {
+      totalPresent: presentCount,
+      totalAbsent: absentCount,
+      totalLate: lateCount,
+      totalLeave: leaveCount,
+    };
   }
 
   private _parseTime(timeStr: string): string {

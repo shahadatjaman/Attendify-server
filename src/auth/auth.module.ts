@@ -11,12 +11,15 @@ import { CloudinaryService } from 'src/shared/cloudinary.service';
 import { LocalStrategy } from './local.strategy';
 import { LoggerModule } from 'src/logger/logger.module';
 import { EmailService } from 'src/email/email.service';
+import { UserDevice, UserDeviceSchema } from 'src/users/schemas/user-device.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: UserDevice.name, schema: UserDeviceSchema }]),
     PassportModule,
     JwtModule.register({
+      global: true,
       secret: 'secretKey',
       signOptions: { expiresIn: '1d' },
     }),

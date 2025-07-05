@@ -7,6 +7,8 @@ import { CustomLogger } from 'src/logger/custom-logger.service';
 import { Shift } from 'src/shifts/schemas/shift.schema';
 import { User } from 'src/users/schemas/user.schema';
 import { NewLog } from './schemas/new-log.schema';
+import { ZktecoGateway } from 'src/zkteco/zkteco.gateway';
+const _ = require('lodash');
 
 @Injectable()
 export class LogCreatedListener {
@@ -15,6 +17,7 @@ export class LogCreatedListener {
     @InjectModel('User') private readonly userModel: Model<User>,
     @InjectModel('Shift') private readonly shiftModel: Model<Shift>,
     private readonly logger: CustomLogger,
+    // private zktecoGateway: ZktecoGateway,
   ) {}
 
   // @OnEvent('log.created')
@@ -25,17 +28,19 @@ export class LogCreatedListener {
 
   @OnEvent('log.created')
   async processAndStoreLog(payload: any) {
-    const { deviceUserId, recordTime, verifyType, verify_state } = payload;
+    const { data, server } = payload;
+    const { deviceUserId, recordTime, verifyType, verify_state } = data;
 
     const timestamp = new Date(recordTime);
     const logDate = timestamp.toISOString().split('T')[0];
     const timeStr = timestamp.toTimeString().slice(0, 5); // HH:mm
+    // console.log('deviceUserId', deviceUserId);
 
-    const user: any = await this.userModel.findOne({ deviceUserId });
-    console.log('user', user);
+    const user: any = await this.userModel.findOne({ userId: deviceUserId });
+    // console.log('user', user);
     if (!user) return;
 
-    const shifts = await this.shiftModel.find({ employees: { $in: [user._id.toString()] } });
+    const shifts = await this.shiftModel.find({ employees: { $in: [user._id] } });
 
     if (!shifts.length) return;
 
@@ -54,41 +59,82 @@ export class LogCreatedListener {
       }
     });
 
-    console.log('matchedShift', matchedShift);
+    const currentDay = this.getCurrentDayName();
+
+    if (!matchedShift?.days.includes(currentDay)) return;
+
     if (!matchedShift) {
       // log still valid, but no shift matched
       this.logger.warn(`No matching shift found for ${deviceUserId} at ${timeStr}`, 'LogService');
       return;
     }
 
-    let status;
+    let log = await this.logModel.findOne({ employee: user._id, logDate, isDeleted: false });
 
     switch (verify_state) {
-      case '0':
-        const isLate = timeStr > matchedShift.startAt;
-        status = isLate ? 'LATE' : 'PRESENT';
+      case 0:
+        if (!log) {
+          const graceTime = this.addMinutes(matchedShift.startAt, 1);
+
+          const isLate = timeStr <= graceTime;
+
+          const verifyTypeLabel = this._mapVerifyType(verifyType);
+
+          const payload = {
+            employee: user._id,
+            logDate,
+            checkInAt: timeStr,
+            status: isLate ? 'LATE' : 'PRESENT',
+            role: user.role,
+            shiftId: matchedShift._id,
+            verifyType: verifyTypeLabel,
+            userId: deviceUserId,
+          };
+
+          const newLog = await this.logModel.create(payload);
+          await newLog.populate({ path: 'employee', select: '-password -isVerified' });
+
+          server.emit('live_logs', newLog);
+        }
+
         break;
+
+      case 1:
+        if (log && !log.checkOutAt) {
+          const isLeave = timeStr < matchedShift.endAt;
+
+          const updatedPayload = {
+            checkOutAt: timeStr,
+            status: isLeave ? 'LEAVE' : 'PRESENT',
+            userId: deviceUserId,
+          };
+
+          const updatedLog = await this.logModel.updateOne(
+            { employee: user._id, logDate },
+            updatedPayload,
+            {
+              new: true,
+            },
+          );
+
+          if (updatedLog?.modifiedCount > 0) {
+            const updatedLog = await this.logModel
+              .findOne({ employee: user._id, logDate })
+              .populate({ path: 'employee', select: '-password -isVerified' });
+
+            server.emit('live_logs', updatedLog);
+          }
+
+          break;
+        }
     }
-
-    const verifyTypeLabel = this._mapVerifyType(verifyType);
-
-    // 🔁 Find existing log for the day
-    let log = await this.logModel.findOne({ employee: user._id, logDate });
-
-    if (!log) {
-      log = new this.logModel({
-        employee: user._id,
-        logDate,
-        checkInAt: timeStr,
-        status,
-        role: user.role,
-        verifyType: verifyTypeLabel,
-      });
-    } else {
-      log.checkOutAt = timeStr;
-    }
-
-    await log.save();
+  }
+  private addMinutes(timeStr: string, minutes: number): string {
+    const [hours, mins] = timeStr.split(':').map(Number);
+    const date = new Date(0, 0, 0, hours, mins + minutes);
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
   }
   private _parseTime(timeStr: string): string {
     // "09:00" => "09:00"
@@ -104,5 +150,10 @@ export class LogCreatedListener {
   private _parseMinutes(time: string): number {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
+  }
+  private getCurrentDayName() {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = new Date();
+    return days[today.getDay()];
   }
 }

@@ -10,6 +10,8 @@ import {
   Query,
   BadRequestException,
   NotFoundException,
+  Patch,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -19,6 +21,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/users/schemas/user.schema';
 import { Model } from 'mongoose';
 import { ResetPassDto } from './dto/resetPass.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { TokenValidatorDto } from './dto/token-validator.dto';
+import { Response } from 'express';
+import geoip from 'geoip-lite';
 
 @Controller('auth')
 export class AuthController {
@@ -29,21 +38,40 @@ export class AuthController {
 
   @Post('login')
   @UseGuards(LocalAuthGuard)
-  async login(@Req() req, @Res({ passthrough: true }) res: any) {
-    const tokens = await this.authService.login(req.user);
-    res.cookie('jwt', tokens.access_token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-    res.cookie('refresh_token', tokens.refresh_token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-    return { message: 'Login successful', accessToken: tokens.access_token };
+  async login(@Req() req, @Res({ passthrough: true }) res: Response) {
+    try {
+      // console.log('process.env.NODE_ENV', process.env.NODE_ENV);
+      // const ip =
+      //   process.env.NODE_ENV === 'development'
+      //     ? '103.142.88.50'
+      //     : ((req.headers['x-forwarded-for'] || req.socket.remoteAddress) as string);
+
+      // const userAgent = req.headers['user-agent'];
+      // console.log('ip', ip);
+      // const geo = geoip.lookup('207.97.227.239');
+      // const location = geo ? `${geo.city}, ${geo.country}` : 'Unknown';
+      // const lastActive = new Date();
+
+      // console.log('ip', ip);
+      // console.log('userAgent', userAgent);
+
+      // console.log('geo', geo);
+
+      // console.log('location', location);
+
+      const tokens = await this.authService.login(req.user);
+
+      res.cookie('refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      return { message: 'Login successful', accessToken: tokens.access_token };
+    } catch (error) {
+      console.log('error', error);
+      throw new InternalServerErrorException('Error occured to login');
+    }
   }
 
   @Post('register')
@@ -53,17 +81,19 @@ export class AuthController {
     return this.authService.register(body, avatarPath);
   }
 
-  @Post('refresh')
+  @Get('refresh')
   async refresh(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const refreshToken = req.cookies['refresh_token'];
+
     const newAccessToken = await this.authService.refreshToken(refreshToken);
+
     res.cookie('jwt', newAccessToken.access_token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 15 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    return { message: 'Access token refreshed' };
+    return { message: 'Access token refreshed', accessToken: newAccessToken.access_token };
   }
 
   @Get('verify')
@@ -73,11 +103,23 @@ export class AuthController {
     }
 
     try {
-      await this.authService.verifyEmailToken(token);
-      return res.status(200).send('✅ Email verified successfully!');
+      const isToken: any = await this.authService.verifyEmailToken(token);
+      if (!isToken) {
+        return res.status(400).json({
+          message: 'Invalid or expired token.',
+          status: 400,
+        });
+      }
+
+      return res.status(200).json({
+        message: '✅ Email verified successfully!',
+        status: 200,
+      });
     } catch (err) {
-      console.log('err', err);
-      return res.status(400).send('❌ Invalid or expired token.');
+      return res.status(400).json({
+        message: 'Invalid or expired token.',
+        status: 400,
+      });
     }
   }
 
@@ -89,7 +131,7 @@ export class AuthController {
     const token = await this.authService.generateResetToken(user.id);
     await this.authService.sendResetEmail(user.email, token);
 
-    return { message: 'Password reset link sent to your email' };
+    return { message: 'Password reset link sent to your email', status: 200 };
   }
 
   @Post('reset-password')
@@ -97,5 +139,80 @@ export class AuthController {
     const { token, newPassword } = body;
 
     return this.authService.resetPassword(token, newPassword);
+  }
+
+  @Post('token-validator')
+  async tokenValidation(@Body() body: TokenValidatorDto, @Res({ passthrough: true }) res: any) {
+    const { token } = body;
+
+    try {
+      const tokenValidity = this.authService.validateToken(token);
+
+      if (tokenValidity.statusCode === 200) {
+        const user = await this.authService.getUserByUserId(tokenValidity.data.userId);
+
+        const tokens = await this.authService.login(user);
+
+        res.cookie('refresh_token', tokens.refresh_token, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        return tokenValidity;
+      } else {
+        return tokenValidity;
+      }
+    } catch (error) {
+      console.log('error', error);
+      throw new InternalServerErrorException('Error occured to validate token');
+    }
+  }
+
+  @Patch('update-password')
+  @Roles('admin', 'moderator', 'superadmin', 'employee')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async updatePassword(
+    @Body() dto: UpdatePasswordDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    const { userId } = req.user;
+
+    try {
+      const user = await this.authService.getUserByUserId(userId);
+
+      const tokens = await this.authService.login(user);
+
+      res.cookie('refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      return this.authService.updatePasswordWithoutOld(userId, dto.newPassword);
+    } catch (error) {
+      console.log('error', error);
+      throw new InternalServerErrorException('Error occured to update pass');
+    }
+  }
+
+  @Post('logout')
+  @Roles('admin', 'moderator', 'superadmin', 'employee')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  logout(@Res({ passthrough: true }) res: Response) {
+    try {
+      // Clear the refresh_token cookie
+      res.clearCookie('refresh_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+
+      return { message: 'Logged out successfully', status: 200 };
+    } catch (error) {
+      throw new InternalServerErrorException('Error occurred to logout');
+    }
   }
 }

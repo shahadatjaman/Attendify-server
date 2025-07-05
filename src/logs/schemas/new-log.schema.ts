@@ -19,10 +19,19 @@ export class NewLog extends Document {
   status: string;
 
   @Prop()
+  userId: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Shift' })
+  shiftId: Types.ObjectId;
+
+  @Prop()
   role: string;
 
   @Prop({ default: 'CARD' })
   verifyType: 'CARD';
+
+  @Prop({ default: false })
+  isDeleted: boolean;
 }
 
 export const NewLogSchema = SchemaFactory.createForClass(NewLog);

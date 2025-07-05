@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'stream';
@@ -20,21 +20,25 @@ export class CloudinaryService {
   }
 
   async uploadImage(file: any): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: 'avatars' },
-        (error, result) => {
-          if (error) return reject(error);
-          if (result) {
-            resolve(result.secure_url);
-          }
-        },
-      );
+    try {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: 'avatars' },
+          (error, result) => {
+            if (error) return reject(error);
+            if (result) {
+              resolve(result.secure_url);
+            }
+          },
+        );
 
-      const filePath = path.resolve(file); // absolute path
-      const fileStream = fs.createReadStream(filePath);
+        const filePath = path.resolve(file); // absolute path
+        const fileStream = fs.createReadStream(filePath);
 
-      fileStream.pipe(uploadStream);
-    });
+        fileStream.pipe(uploadStream);
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Error occurred to upload file');
+    }
   }
 }

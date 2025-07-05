@@ -3,7 +3,8 @@ import { IsNotEmpty, IsString, IsIP, IsOptional, IsArray, IsMongoId } from 'clas
 export class CreateDeviceDto {
   @IsNotEmpty()
   @IsString()
-  deviceName: string;
+  @IsOptional()
+  deviceName?: string;
 
   @IsNotEmpty()
   @IsIP()

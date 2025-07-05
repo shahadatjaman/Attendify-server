@@ -1,10 +1,21 @@
-import { IsArray, IsMongoId, IsNotEmpty, IsString, Matches, IsOptional } from 'class-validator';
+import {
+  IsArray,
+  IsMongoId,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  IsOptional,
+  ArrayNotEmpty,
+} from 'class-validator';
 import { IsEndTimeAfterStartTime } from '../validators/end-after-start.validator';
+import { PartialType } from '@nestjs/mapped-types';
+import { Types } from 'mongoose';
+import { ObjectId } from 'mongoose';
 
 export class CreateShiftDto {
   @IsNotEmpty()
-  @IsMongoId()
-  dep: string;
+  @IsMongoId({ each: true })
+  dept: ObjectId;
 
   @IsNotEmpty()
   @IsString()
@@ -24,5 +35,18 @@ export class CreateShiftDto {
   @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
-  employees?: string[];
+  employees?: Types.ObjectId[];
+
+  @IsNotEmpty()
+  @IsArray()
+  days: string[];
+}
+
+export class UpdateShiftDto extends PartialType(CreateShiftDto) {}
+
+export class DeleteManyDepartmentsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsMongoId({ each: true })
+  ids: string[];
 }

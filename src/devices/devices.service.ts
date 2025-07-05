@@ -4,13 +4,20 @@ import { Model } from 'mongoose';
 import { Device } from './schemas/device.schema';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
+import { UserService } from 'src/users/users.service';
+import { User } from 'src/users/schemas/user.schema';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class DeviceService {
-  constructor(@InjectModel('Device') private deviceModel: Model<Device>) {}
+  constructor(
+    @InjectModel('Device') private deviceModel: Model<Device>,
+    @InjectModel(User.name) private userModel: Model<User>,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
-  async isDuplicateDeviceName(name: string, excludeId?: string): Promise<boolean> {
-    const filter: any = { deviceName: name };
+  async isDuplicateDeviceName(name?: string, excludeId?: string): Promise<boolean> {
+    const filter: any = { deviceName: name || '' };
     if (excludeId) filter._id = { $ne: excludeId };
     return !!(await this.deviceModel.findOne(filter));
   }
@@ -25,12 +32,28 @@ export class DeviceService {
   }
 
   async create(dto: CreateDeviceDto) {
-    if (await this.isDuplicateDeviceName(dto.deviceName)) {
+    const device = await this.deviceModel.findOne({});
+
+    if (device) {
+      const updated = await this.deviceModel.findByIdAndUpdate(device._id, dto, { new: true });
+      if (!updated) throw new NotFoundException('Device not found');
+      return { message: 'Device updated successfully', data: updated };
+    }
+
+    if (await this.isDuplicateDeviceName(dto?.deviceName)) {
       throw new ConflictException('Device name already exists');
     }
     if (await this.isDuplicateDeviceIp(dto.deviceIp)) {
       throw new ConflictException('Device IP already exists');
     }
+
+    const users = await this.userModel.find();
+
+    if (users) {
+      const userIds: any = users.map((user) => user._id);
+      dto.users = userIds;
+    }
+
     const created = new this.deviceModel(dto);
     const result = await created.save();
     return { message: 'Device created successfully', data: result };
@@ -70,9 +93,21 @@ export class DeviceService {
     return { message: 'Device retrieved successfully', data: device };
   }
 
+  async findOne() {
+    try {
+      const device = await this.deviceModel.findOne();
+
+      if (!device) throw new NotFoundException('Device not found');
+      return device;
+    } catch (error) {
+      return null;
+    }
+  }
+
   async delete(id: string) {
     const result = await this.deviceModel.findByIdAndDelete(id);
     if (!result) throw new NotFoundException('Device not found');
-    return { message: 'Device deleted successfully' };
+
+    return { message: 'Device deleted successfully', status: 200 };
   }
 }

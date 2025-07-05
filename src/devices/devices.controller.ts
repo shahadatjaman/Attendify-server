@@ -12,19 +12,19 @@ export class DeviceController {
   constructor(private readonly service: DeviceService) {}
 
   @Post()
-  @Roles('admin', 'superadmin')
+  @Roles('admin', 'superadmin', 'employee')
   create(@Body() dto: CreateDeviceDto) {
     return this.service.create(dto);
   }
 
   @Get()
-  @Roles('admin', 'moderator', 'superadmin')
+  @Roles('admin', 'moderator', 'superadmin', 'employee')
   findAll() {
     return this.service.findAll();
   }
 
   @Get(':id')
-  @Roles('admin', 'moderator', 'superadmin')
+  @Roles('admin', 'moderator', 'superadmin', 'employee')
   findById(@Param('id') id: string) {
     return this.service.findById(id);
   }

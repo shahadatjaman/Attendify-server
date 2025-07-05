@@ -1,8 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ObjectId, Types } from 'mongoose';
 import { Department } from './schemas/dept.schema';
-import { CreateDepartmentDto, UpdateDepartmentDto } from './dto/create-department.dto';
+import { CreateDepartmentDto, UpdateDepartmentDto } from './dto/department.dto';
+import { User } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class DepartmentsService {
@@ -21,9 +22,10 @@ export class DepartmentsService {
     if (isDuplicate) {
       throw new ConflictException('Department name already exists');
     }
+
     const created = new this.deptModel(deptDto);
     const result = await created.save();
-    return { message: 'Department created successfully', data: result };
+    return { message: 'Department created successfully', data: result, status: 201 };
   }
 
   async findAll(): Promise<Department[]> {
@@ -33,7 +35,7 @@ export class DepartmentsService {
       .populate({ path: 'employees', select: '-password' });
   }
 
-  async findById(id: string): Promise<Department> {
+  async findById(id: ObjectId): Promise<Department> {
     const dept = await this.deptModel
       .findById(id)
       .populate({ path: 'manager', select: '-password' })
@@ -41,6 +43,15 @@ export class DepartmentsService {
     if (!dept) throw new NotFoundException('Department not found');
     return dept;
   }
+
+  // async findByName(deptId: string): Promise<Department> {
+  //   const dept = await this.deptModel
+  //     .findById(deptId)
+  //     .populate({ path: 'manager', select: '-password' })
+  //     .populate({ path: 'employees', select: '-password' });
+  //   if (!dept) throw new NotFoundException('Department not found');
+  //   return dept;
+  // }
 
   async update(id: string, updateDto: UpdateDepartmentDto): Promise<any> {
     if (updateDto.deptName) {
@@ -51,12 +62,23 @@ export class DepartmentsService {
     }
     const updated = await this.deptModel.findByIdAndUpdate(id, updateDto, { new: true });
     if (!updated) throw new NotFoundException('Department not found');
-    return { message: 'Department updated successfully', data: updated };
+    return { message: 'Department updated successfully', data: updated, status: 200 };
   }
 
   async delete(id: string): Promise<any> {
     const result = await this.deptModel.findByIdAndDelete(id);
     if (!result) throw new NotFoundException('Department not found');
-    return { message: 'Department deleted successfully' };
+    return { message: 'Department deleted successfully', status: 200 };
+  }
+
+  async deleteManyDepartments(ids: string[]): Promise<{ deletedCount: number; status: number }> {
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+    const result = await this.deptModel.deleteMany({ _id: { $in: objectIds } });
+
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('No departments were deleted.');
+    }
+
+    return { deletedCount: result.deletedCount, status: 200 };
   }
 }

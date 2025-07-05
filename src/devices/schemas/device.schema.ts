@@ -4,8 +4,8 @@ import { Document, Types } from 'mongoose';
 
 @Schema()
 export class Device extends Document {
-  @Prop({ required: true, unique: true })
-  deviceName: string;
+  @Prop({ required: false, unique: true, default: 'ZKTeco' })
+  deviceName?: string;
 
   @Prop({ required: true, unique: true })
   deviceIp: string;
@@ -13,7 +13,7 @@ export class Device extends Document {
   @Prop({ required: true })
   devicePort: string;
 
-  @Prop({ default: 'INACTIVE' }) // ACTIVE | INACTIVE | OFFLINE
+  @Prop({ default: 'ACTIVE' }) // ACTIVE | INACTIVE | OFFLINE
   status: string;
 
   @Prop({ default: null })

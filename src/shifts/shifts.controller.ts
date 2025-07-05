@@ -1,8 +1,7 @@
-// shifts/shift.controller.ts
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 
-import { CreateShiftDto } from './dto/create-shift.dto';
-import { UpdateShiftDto } from './dto/update-shift.dto';
+import { CreateShiftDto, DeleteManyDepartmentsDto, UpdateShiftDto } from './dto/shift.dto';
+
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
@@ -20,7 +19,7 @@ export class ShiftController {
   }
 
   @Get()
-  @Roles('admin', 'superadmin', 'moderator')
+  @Roles('admin', 'superadmin')
   findAll() {
     return this.shiftService.findAll();
   }
@@ -35,6 +34,13 @@ export class ShiftController {
   @Roles('admin', 'superadmin')
   update(@Param('id') id: string, @Body() dto: UpdateShiftDto) {
     return this.shiftService.update(id, dto);
+  }
+
+  @Delete('bulk-delete')
+  @Roles('admin', 'superadmin')
+  async deleteManyShifts(@Body() body: DeleteManyDepartmentsDto) {
+    const result = await this.shiftService.deleteManyDepartments(body.ids);
+    return { ...result, status: 200 };
   }
 
   @Delete(':id')

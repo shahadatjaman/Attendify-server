@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, IsArray, IsMongoId } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsArray,
+  IsMongoId,
+  ArrayNotEmpty,
+} from 'class-validator';
 
 export class CreateDepartmentDto {
   @IsNotEmpty()
@@ -13,9 +20,9 @@ export class CreateDepartmentDto {
   @IsMongoId()
   manager?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
 
   @IsOptional()
   @IsArray()
@@ -39,9 +46,11 @@ export class UpdateDepartmentDto {
   @IsOptional()
   @IsString()
   status?: string;
+}
 
-  @IsOptional()
+export class DeleteManyDepartmentsDto {
   @IsArray()
+  @ArrayNotEmpty()
   @IsMongoId({ each: true })
-  employees?: string[];
+  ids: string[];
 }

@@ -12,8 +12,8 @@ export class Department extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   manager?: Types.ObjectId;
 
-  @Prop({ required: true })
-  status: string;
+  @Prop({ required: false, default: 'ACTIVE' })
+  status?: string;
 
   @Prop([{ type: Types.ObjectId, ref: 'User' }])
   employees: Types.ObjectId[];

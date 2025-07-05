@@ -13,6 +13,8 @@ import { UserSchema } from 'src/users/schemas/user.schema';
 import { CustomLogger } from 'src/logger/custom-logger.service';
 import { LoggerModule } from 'src/logger/logger.module';
 import { LogCreatedListener } from 'src/logs/LogCreatedListener';
+import { DeviceService } from 'src/devices/devices.service';
+import { ZktecoController } from './zkteco.controller';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { LogCreatedListener } from 'src/logs/LogCreatedListener';
     MongooseModule.forFeature([{ name: 'Shift', schema: ShiftSchema }]),
     LoggerModule,
   ],
-  providers: [ZktecoService, ZktecoGateway, LogsService],
+  providers: [ZktecoService, ZktecoGateway, LogsService, DeviceService],
+  controllers: [ZktecoController],
 })
 export class ZktecoModule {}
