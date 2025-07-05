@@ -63,8 +63,8 @@ export class AuthController {
 
       res.cookie('refresh_token', tokens.refresh_token, {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
       return { message: 'Login successful', accessToken: tokens.access_token };
@@ -89,8 +89,8 @@ export class AuthController {
 
     res.cookie('jwt', newAccessToken.access_token, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      secure: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return { message: 'Access token refreshed', accessToken: newAccessToken.access_token };
@@ -155,8 +155,8 @@ export class AuthController {
 
         res.cookie('refresh_token', tokens.refresh_token, {
           httpOnly: true,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'none',
+          secure: true,
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
@@ -187,8 +187,8 @@ export class AuthController {
 
       res.cookie('refresh_token', tokens.refresh_token, {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
       return this.authService.updatePasswordWithoutOld(userId, dto.newPassword);
@@ -206,8 +206,8 @@ export class AuthController {
       // Clear the refresh_token cookie
       res.clearCookie('refresh_token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: 'none',
+        secure: true,
       });
 
       return { message: 'Logged out successfully', status: 200 };
