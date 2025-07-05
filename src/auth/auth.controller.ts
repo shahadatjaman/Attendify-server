@@ -40,25 +40,6 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   async login(@Req() req, @Res({ passthrough: true }) res: Response) {
     try {
-      // console.log('process.env.NODE_ENV', process.env.NODE_ENV);
-      // const ip =
-      //   process.env.NODE_ENV === 'development'
-      //     ? '103.142.88.50'
-      //     : ((req.headers['x-forwarded-for'] || req.socket.remoteAddress) as string);
-
-      // const userAgent = req.headers['user-agent'];
-      // console.log('ip', ip);
-      // const geo = geoip.lookup('207.97.227.239');
-      // const location = geo ? `${geo.city}, ${geo.country}` : 'Unknown';
-      // const lastActive = new Date();
-
-      // console.log('ip', ip);
-      // console.log('userAgent', userAgent);
-
-      // console.log('geo', geo);
-
-      // console.log('location', location);
-
       const tokens = await this.authService.login(req.user);
 
       res.cookie('refresh_token', tokens.refresh_token, {
@@ -66,6 +47,8 @@ export class AuthController {
         sameSite: 'none',
         secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        domain: 'attendify-server-10.onrender.com', // Usually optional, but can try
+        path: '/', // Default path
       });
       return { message: 'Login successful', accessToken: tokens.access_token };
     } catch (error) {
