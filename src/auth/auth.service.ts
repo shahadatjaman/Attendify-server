@@ -115,6 +115,7 @@ export class AuthService {
       username: user.userId,
       sub: user._id,
       name: `${user.firstname} ${user.lastname}`,
+      avatar: user.avatar,
       email: user.email,
       roles: user.roles,
     };
