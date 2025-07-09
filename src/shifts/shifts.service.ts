@@ -58,7 +58,7 @@ export class ShiftService {
         .find()
         .populate({ path: 'dept', select: 'deptName status' })
         .populate({ path: 'employees', select: '-password' }); // ✅
-      return { message: 'Shifts retrieved successfully', data: shifts };
+      return { message: 'Shifts retrieved successfully', data: shifts, status: 200 };
     } catch (error) {
       throw new InternalServerErrorException(`Error occurred to fetch shift : ${error.message}`);
     }

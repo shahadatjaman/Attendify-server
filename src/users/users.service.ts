@@ -95,6 +95,12 @@ export class UserService {
     return user;
   }
 
+  async findByUserId(id: string): Promise<User> {
+    const user = await this.userModel.findOne({ userId: id });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
   async updateUser(id: string, dto: Partial<UserDto>, avatarFile: any): Promise<any> {
     const avatarUrl = avatarFile ? await this.cloudinary.uploadImage(avatarFile) : dto.avatar;
 

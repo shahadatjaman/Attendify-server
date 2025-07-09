@@ -6,8 +6,8 @@ export class NewLog extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   employee: Types.ObjectId;
 
-  @Prop({ required: true })
-  logDate: string;
+  @Prop({ required: true, type: Date })
+  logDate: Date;
 
   @Prop()
   checkInAt: string;

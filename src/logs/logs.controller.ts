@@ -1,20 +1,34 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   InternalServerErrorException,
   Param,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { LogsService } from './logs.service';
 import { Roles } from 'src/auth/roles.decorator';
+import { CreateLogDto } from './dto/create-log.dto';
+import { NewLog } from './schemas/new-log.schema';
 
 @Controller('logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LogsController {
   constructor(private logService: LogsService) {}
+
+  @Post('')
+  @Roles('admin', 'moderator', 'superadmin')
+  async createLog(@Body() createLogDto: CreateLogDto) {
+    try {
+      return await this.logService.create(createLogDto);
+    } catch (error) {
+      return error;
+    }
+  }
 
   @Get('today')
   @Roles('admin', 'moderator', 'superadmin')

@@ -1,11 +1,17 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { NewLog } from './schemas/new-log.schema';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Shift } from 'src/shifts/schemas/shift.schema';
 import { User } from 'src/users/schemas/user.schema';
 import { CustomLogger } from 'src/logger/custom-logger.service';
 import { OnEvent } from '@nestjs/event-emitter';
+import { CreateLogDto } from './dto/create-log.dto';
 
 const VERIFY_TYPE_MAP = {
   1: 'FINGER',
@@ -80,6 +86,35 @@ export class LogsService {
     await log.save();
   }
 
+  async create(createLogDto: CreateLogDto): Promise<any> {
+    const existingLog = await this.logModel.findOne({
+      logDate: createLogDto.logDate,
+      shiftId: createLogDto.shiftId,
+      isDeleted: false,
+    });
+
+    if (existingLog) {
+      throw new ConflictException("You can't create  duplicate log!");
+    }
+
+    const user: any = await this.userModel.findOne({ userId: createLogDto.userId });
+
+    if (!user) {
+      throw new NotFoundException('Employee not found');
+    }
+    createLogDto.employee = user._id;
+    createLogDto.verifyType = 'CUSTOME';
+
+    const createdLog = new this.logModel(createLogDto);
+    const savedLog = await createdLog.save();
+
+    // Return the saved log with populated `employee` and `shiftId`
+    return await this.logModel
+      .findById(savedLog._id)
+      .populate({ path: 'employee', select: '-password -isVerified -isDeleted' })
+      .populate({ path: 'shiftId', select: '' });
+  }
+
   // This method retrieves logs for the current day
   async getTodayLogs(): Promise<NewLog[]> {
     const todayDateString = new Date().toISOString().split('T')[0];
@@ -122,18 +157,22 @@ export class LogsService {
       this.logModel.countDocuments({
         logDate: todayDateString,
         status: 'PRESENT',
+        isDeleted: true,
       }),
       this.logModel.countDocuments({
         logDate: todayDateString,
         status: 'ABSENT',
+        isDeleted: true,
       }),
       this.logModel.countDocuments({
         logDate: todayDateString,
         status: 'LATE',
+        isDeleted: true,
       }),
       this.logModel.countDocuments({
         logDate: todayDateString,
         status: 'LEAVE',
+        isDeleted: true,
       }),
     ]);
 

@@ -40,7 +40,7 @@ export class UpdateDepartmentDto {
   description?: string;
 
   @IsOptional()
-  @IsMongoId()
+  @IsString()
   manager?: string;
 
   @IsOptional()

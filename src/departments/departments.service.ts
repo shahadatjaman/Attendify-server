@@ -7,7 +7,10 @@ import { User } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class DepartmentsService {
-  constructor(@InjectModel(Department.name) private deptModel: Model<Department>) {}
+  constructor(
+    @InjectModel(Department.name) private deptModel: Model<Department>,
+    @InjectModel(User.name) private userModel: Model<User>,
+  ) {}
 
   async checkDuplicateDeptName(name: string, excludeId?: string): Promise<boolean> {
     const query: any = { deptName: name };
@@ -60,7 +63,18 @@ export class DepartmentsService {
         throw new ConflictException('Department name already exists');
       }
     }
-    const updated = await this.deptModel.findByIdAndUpdate(id, updateDto, { new: true });
+
+    if (updateDto.manager) {
+      const user: any = await this.findByUserId(updateDto.manager);
+
+      if (user) {
+        updateDto.manager = user._id;
+      }
+    }
+
+    const updated = await this.deptModel
+      .findByIdAndUpdate(id, updateDto, { new: true })
+      .populate({ path: 'manager', select: '-password -isVerified' });
     if (!updated) throw new NotFoundException('Department not found');
     return { message: 'Department updated successfully', data: updated, status: 200 };
   }
@@ -69,6 +83,12 @@ export class DepartmentsService {
     const result = await this.deptModel.findByIdAndDelete(id);
     if (!result) throw new NotFoundException('Department not found');
     return { message: 'Department deleted successfully', status: 200 };
+  }
+
+  async findByUserId(id: string): Promise<User> {
+    const user = await this.userModel.findOne({ userId: id });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   async deleteManyDepartments(ids: string[]): Promise<{ deletedCount: number; status: number }> {

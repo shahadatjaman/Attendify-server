@@ -123,6 +123,8 @@ export class ZktecoGateway implements OnGatewayConnection, OnGatewayDisconnect {
                       cardno: user.cardNo || 0,
                     }));
 
+                    console.log('userMapped', userMapped);
+
                     for (const user of userMapped) {
                       await this.zkInstance.setUser(
                         user.uid,
@@ -260,7 +262,7 @@ export class ZktecoGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async restartDevice(@MessageBody() data: any) {
     console.log('data', data);
     if (this.connectionStatus) {
-      await this.zkInstance.shutdown();
+      await this.zkInstance.restart();
     }
   }
 
