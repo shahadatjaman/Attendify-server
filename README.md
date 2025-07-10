@@ -1,98 +1,88 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ZKTimey Server – Biometric Attendance Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This is the backend service for **ZKTimey**, a biometric attendance management system. Built with **NestJS**, it handles user authentication, attendance logging, shift scheduling, and real-time communication with **ZKTeco biometric devices** using a custom TCP/IP utility.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+- ✅ User & admin authentication (JWT-based)
+- 📅 Attendance log management
+- 🧑‍💼 Department & employee management
+- ⏰ Shift & schedule logic
+- 🔄 Real-time log sync from ZKTeco biometric devices
+- 📡 TCP/IP socket integration using [`zkteco-terminal`](https://www.npmjs.com/package/zkteco-terminal)
+- 🌐 REST API for client-side dashboard
+- 📁 MongoDB with Mongoose ODM
+- ⚙ Configurable `.env` support
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🧪 Tech Stack
 
-## Project setup
+- **Framework**: NestJS
+- **Database**: MongoDB, Mongoose
+- **Socket**: TCP/IP (ZKTeco protocol)
+- **Cache**: Redis (optional)
+- **Auth**: JWT + Refresh Tokens
+
+## 📦 Installation
 
 ```bash
+# Clone the repository
+$ git clone https://github.com/shahadatjaman/Attendify-server.git
+$ cd Attendify-server
+
+# Install dependencies
 $ npm install
+
+# Create a .env file with the following variables
+CLOUDINARY_NAME=CLOUDINARY_NAME
+CLOUDINARY_API_KEY=CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET=CLOUDINARY_API_SECRET
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USER=your_mailtrap_username
+MAIL_PASS=your_mailtrap_password
+FROM_EMAIL=no-reply@example.com
+JWT_SECRET=JWT_SECRET
+
 ```
 
-## Compile and run the project
+## 🖥 Run the Server
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
+# Start in dev mode
 $ npm run start:dev
 
-# production mode
+# Or build and run in production
+$ npm run build
 $ npm run start:prod
 ```
 
-## Run tests
+## 🧠 ZKTeco Device Integration
 
-```bash
-# unit tests
-$ npm run test
+The backend integrates with biometric devices using the [zkteco-terminal](https://www.npmjs.com/package/zkteco-terminal) package. The device IP and port are read from the frontend UI and used to establish a socket connection for log syncing.
 
-# e2e tests
-$ npm run test:e2e
+## 🛠 API Overview
 
-# test coverage
-$ npm run test:cov
-```
+- `POST /auth/login` – login endpoint
+- `GET /users` – list users
+- `GET /departments` – list departments
+- `GET /logs/today` – get latest attendance logs
+- `GET /shifts` – list shifts
+- `POST /users/auth/` – create user
+- `POST /departments/` – create department
+- `POST /logs` – create new log
+- `POST /devices` – connect device (IP and PORT must forward from router)
 
-## Deployment
+> Full API docs coming soon (or use Postman collection).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 🔗 Related Projects
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- **Client Dashboard**: [zkteco-time-pro](https://github.com/shahadatjaman/zkteco-time-pro)
+- **ZKTeco Package**: [zkteco-terminal](https://www.npmjs.com/package/zkteco-terminal)
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## 🙌 Author
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Built with ❤️ by [Shahadat Jaman](https://shahadatjaman.vercel.app)
 
-## Resources
+## 🛡 License
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+[MIT](./LICENSE)

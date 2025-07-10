@@ -117,9 +117,9 @@ export class LogsService {
 
   // This method retrieves logs for the current day
   async getTodayLogs(): Promise<NewLog[]> {
-    const todayDateString = new Date().toISOString().split('T')[0];
+    // const todayDateString = new Date().toISOString().split('T')[0];
     return this.logModel
-      .find({ logDate: todayDateString, isDeleted: false })
+      .find({ isDeleted: false })
       .populate({ path: 'employee', select: '-password -isVerified -isDeleted' })
       .populate({ path: 'shiftId', select: '' });
   }
